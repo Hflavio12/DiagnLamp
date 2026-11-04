@@ -1,4 +1,4 @@
-# DiagnLamp <img src="man/figures/logo.png" align="right" height="139" />
+# DiagnLamp <img src="man/figures/figures.png" align="right" height="139" />
 
 <!-- badges: start -->
 ![License: GPL-3](https://img.shields.io/badge/License-GPL3-blue.svg)
