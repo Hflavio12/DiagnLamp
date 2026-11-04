@@ -6,8 +6,7 @@
 
 ## Easy punctual and interval estimation
 
-**DiagnLamp** Finding a function of the sample data that provides a decent approximation of the unknown parameters is the difficulty when we are unable to determine the population's characteristics (mean, variance, etcetera, etc.). This package gives various function for the diagnostic of the punctual and interval estimate of population parameters using MSE and the method of moments, diagnostic statistics include optional graphs, the biasedness, the analytical optimism and the mallows_cp. 
-We provide also functions about the diagnostic about the influence of given observation and the overall usefulness of a model.
+**DiagnLamp** Finding a function of the sample data that provides a decent approximation of the unknown parameters is the difficulty when we are unable to determine the population's characteristics (mean, variance, etc.). This package gives various function for the diagnostic of the punctual and interval estimate of population parameters using MSE and the method of moments, diagnostic statistics include optional graphs, the biasedness, the analytical optimism and the mallows_cp. 
 
 ---
 
