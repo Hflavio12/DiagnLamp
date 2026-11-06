@@ -565,7 +565,40 @@ plot_influence_analysis <- function(res) {
   print(p_cooks)
 }
 
-
-
+#' @name train_val_test_split
+#' @title Dataset splitting.
+#' @description Split a dataset into three popular sub-elements: training, validation and test datasets.
+#' @param data Dataframe. The starting dataframe.
+#' @param train_size Dataframe. The size of the training set.
+#' @param val_size Dataframe. The size of the validation set.
+#' @param test_size Dataframe. The size of the test set.
+#' @return A list with the three sets.
+#' @examples
+#'
+#' # Prepare data
+#' df <- na.omit(airquality)
+#'
+#' # Split the dataset
+#' res <-  train_val_test_split(df, train_size = 0.7, val_size = 0.15, test_size = 0.15)
+#'
+#' @export
+train_val_test_split <- function(df, train_size = 0.7, val_size = 0.15, test_size = 0.15) {
+  if (train_size + val_size + test_size != 1) {
+    stop("The sum of sizes must be 1")
+  }
+  else {
+  set.seed(123)
+  idx <- sample(1:nrow(df), size = train_size * nrow(df))
+  train <- df[idx, ]
+  idx2 <- sample(1:nrow(train), size = val_size * nrow(train))
+  val <- train[idx2, ]
+  test <- df[-idx,]
+  return(list(
+    train = train,
+    validation = val,
+    test = test
+  ))
+  }
+}
 
 
