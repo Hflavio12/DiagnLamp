@@ -606,5 +606,9 @@ train_val_test_split <- function(df, train_size = 0.7, val_size = 0.15, test_siz
   ))
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9055350527a2ffe1184ab2760c767ee979de00d2
 
 
