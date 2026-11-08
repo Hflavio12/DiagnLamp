@@ -24,7 +24,7 @@
 #' results <- simulate_estimator_mse(n = 10,
 #' true_param = 4,
 #' data_gen_func = generate_data,
-#' estimator_func = correct_estimator, nsim = 1000)
+#' estimator_func = correct_estimator, nsim = 10000)
 #'
 #' @note
 #' The consistency check is based on the Spearman correlation between sample sizes and their corresponding MSEs. A strongly negative correlation (<= -0.9) indicates empirical consistency of the estimator.
@@ -149,7 +149,7 @@ plot_diagnlamp_mse <- function(res) {
 #' @description This function estimates a specified moment (mean, variance, skewness, or kurtosis) from the provided data using the Method of Moments (MoM). It also checks for bias and computes confidence intervals based on the selected method (Normal or Hoeffding). Additionally, it can generate a plot comparing the empirical distribution of the data with the theoretical distribution implied by the estimated moment.
 #' @param data Numeric vector. The dataset from which to estimate the moment.
 #' @param moment Character. The moment to estimate. Options are "mean", "variance", "skewness" or "kurtosis".
-#' @param confidence_intervals Character. The method for computing confidence intervals. Options are "Normal" or "Hoeffding".
+#' @param confidence_intervals Character. The method for computing confidence intervals. Options are "Normal", "Hoeffding" or "Chebyshev".
 #' @param level Numeric. The confidence level for the intervals (default is 0.90).
 #' @param assumption_about_data Character. Normal as default.
 #' @return A list containing the estimated moment, bias status, confidence intervals, and other relevant information.
@@ -159,14 +159,14 @@ plot_diagnlamp_mse <- function(res) {
 #'
 #' data <- rnorm(100, mean = 5, sd = 2)
 #'
-#' result <- find_method_mm(data, moment = "mean", confidence_intervals = "Normal", level = 0.95)
+#' result <- find_method_mm(data, moment = "mean", confidence_intervals = "Chebyshev", level = 0.95)
 #'
 #' @note
-#' The Hoeffding confidence interval requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
+#' The Hoeffding and Chebyshev confidence intervals requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
 #' @export
 find_method_mm <- function(data,
                            moment = c("mean", "variance", "skewness", "kurtosis"),
-                           confidence_intervals = c("Normal", "Hoeffding"),
+                           confidence_intervals = c("Normal", "Hoeffding", "Chebyshev"),
                            level = 0.90, assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform")) {
 
   moment <- match.arg(moment)
@@ -213,6 +213,12 @@ find_method_mm <- function(data,
       b <- max(data)
       R <- b - a
       margin <- R * sqrt(log(2/alpha) / (2 * n))
+      ci <- c(sample_moment - margin, sample_moment + margin)
+    } else if (ci_type == "Chebyshev") {
+      a <- min(data)
+      b <- max(data)
+      R <- b - a
+      margin <- R * sqrt((1)/(4*n*alpha))
       ci <- c(sample_moment - margin, sample_moment + margin)
     }
   } else if (moment == "variance" && ci_type == "Normal") {

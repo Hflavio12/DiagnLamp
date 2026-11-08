@@ -37,6 +37,6 @@ correct_estimator <- function(data) { var(data) }
 results <- simulate_estimator_mse(n = 10,
 true_param = 4,
 data_gen_func = generate_data,
-estimator_func = correct_estimator, nsim = 1000)
+estimator_func = correct_estimator, nsim = 10000)
 
 }
