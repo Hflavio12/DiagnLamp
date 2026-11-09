@@ -38,6 +38,6 @@ The Hoeffding and Chebyshev confidence intervals requires that the data be bound
 
 data <- rnorm(100, mean = 5, sd = 2)
 
-result <- find_method_mm(data, moment = "mean", confidence_intervals = "Normal", level = 0.95)
+result <- find_method_mm(data, moment = "mean", confidence_intervals = "Chebyshev", level = 0.95)
 
 }

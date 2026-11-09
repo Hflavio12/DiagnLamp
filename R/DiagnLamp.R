@@ -133,7 +133,7 @@ plot_diagnlamp_mse <- function(res) {
     ggplot2::geom_vline(ggplot2::aes(xintercept = mean_estimate_vector, color = "Mean of estimations"), linetype = "dotted", linewidth = 1) +
     ggplot2::scale_color_manual(name = "Legend",
                        values = c("True parameter" = "red", "Mean of estimations" = "darkgreen")) +
-    labs(title = "Distribution of the estimator (Monte Carlo simulation)",
+    ggplot2::labs(title = "Distribution of the estimator (Monte Carlo simulation)",
          subtitle = sprintf("Simulations: %d | MSE: %.4f | Bias: %.4f | Variance: %.4f",
                             nsim, mse, bias, variance),
          x = "Estimated value",
@@ -606,9 +606,14 @@ train_val_test_split <- function(df, train_size = 0.7, val_size = 0.15, test_siz
   ))
   }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> 9055350527a2ffe1184ab2760c767ee979de00d2
+library(ggplot2)
+diamonds <- ggplot2::diamonds
+
+
+data <- diamonds$carat
+mean(data)
+
+result <- find_method_mm(data, moment = "mean", confidence_intervals = "Chebyshev", level = 0.95)
 
 
