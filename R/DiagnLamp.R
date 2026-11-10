@@ -73,7 +73,7 @@ simulate_estimator_mse <- function(n, true_param, data_gen_func, estimator_func,
   is_consistent <- !is.na(correlation) && correlation <= -0.9
 
   # Return result as a list
-  res <- list(MSE = mse, Bias = bias, Variance = variance, consistency = is_consistent, estimates = estimates, nsim = nsim, mse = mse, bias = bias, variance = variance, true_param = true_param, mean_estimate = mean_estimate)
+  res <- list(MSE = mse, Bias = bias, Variance = variance, Consistency = is_consistent, Estimates = estimates, nsim = nsim, True_param = true_param, Mean_estimate = mean_estimate)
   class(res) <- "diagnlamp_mse"
   return(res)
 }
@@ -99,7 +99,7 @@ simulate_estimator_mse <- function(n, true_param, data_gen_func, estimator_func,
 #' (0.5 * (data[1]^2 * data[2]^2 * data[3]^3) - (data[1]*data[2]*data[3])) }
 #'
 #' # Run the simulation
-#' results <- simulate_estimator_mse(n = 10,
+#' results <- simulate_estimator_mse(n = 1000,
 #' true_param = true_variance,
 #' data_gen_func = generate_data,
 #' estimator_func = estimator_func, nsim = 1000)
@@ -107,21 +107,20 @@ simulate_estimator_mse <- function(n, true_param, data_gen_func, estimator_func,
 #' # Realize the plot
 #' distorted_estimator <- plot_diagnlamp_mse(results)
 #'
-#' print(distorted_estimator)
 #'
 #' @note
 #' The consistency check is based on the Spearman correlation between sample sizes and their corresponding MSEs. A strongly negative correlation (<= -0.9) indicates empirical consistency of the estimator.
 #' @export
 plot_diagnlamp_mse <- function(res) {
   nsim <- res[['nsim']]
-  mse <- res[['mse']]
-  bias <- res[['bias']]
-  variance <- res[['variance']]
-  true_param <- res[['true_param']]
-  mean_estimate <- res[['mean_estimate']]
+  mse <- res[['MSE']]
+  bias <- res[['Bias']]
+  variance <- res[['Variance']]
+  true_param <- res[['True_param']]
+  mean_estimate <- res[['Mean_estimate']]
 
   df_plot <- data.frame(
-    Estimate = res[["estimates"]],
+    Estimate = res[["Estimates"]],
     true_param_vector = true_param,
     mean_estimate_vector = mean_estimate
   )
@@ -149,7 +148,7 @@ plot_diagnlamp_mse <- function(res) {
 #' @description This function estimates a specified moment (mean, variance, skewness, or kurtosis) from the provided data using the Method of Moments (MoM). It also checks for bias and computes confidence intervals based on the selected method (Normal or Hoeffding). Additionally, it can generate a plot comparing the empirical distribution of the data with the theoretical distribution implied by the estimated moment.
 #' @param data Numeric vector. The dataset from which to estimate the moment.
 #' @param moment Character. The moment to estimate. Options are "mean", "variance", "skewness" or "kurtosis".
-#' @param confidence_intervals Character. The method for computing confidence intervals. Options are "Normal", "Hoeffding" or "Chebyshev".
+#' @param confidence_intervals Character. The method for computing confidence intervals. Options are "Normal", "Hoeffding", "Chebyshev", "Wald", "Wilson" and "Pearson".
 #' @param level Numeric. The confidence level for the intervals (default is 0.90).
 #' @param assumption_about_data Character. Normal as default.
 #' @return A list containing the estimated moment, bias status, confidence intervals, and other relevant information.
@@ -159,46 +158,74 @@ plot_diagnlamp_mse <- function(res) {
 #'
 #' data <- rnorm(100, mean = 5, sd = 2)
 #'
-#' result <- find_method_mm(data, moment = "mean", confidence_intervals = "Chebyshev", level = 0.95)
+#' result <- find_method_mm(data, moment = "skewness", confidence_intervals = "Normal", level = 0.95)
 #'
 #' @note
-#' The Hoeffding and Chebyshev confidence intervals requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
+#' The Hoeffding, Pearson and Chebyshev confidence intervals requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
 #' @export
 find_method_mm <- function(data,
-                           moment = c("mean", "variance", "skewness", "kurtosis"),
-                           confidence_intervals = c("Normal", "Hoeffding", "Chebyshev"),
-                           level = 0.90, assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform")) {
+                            moment = c("mean", "variance", "skewness", "kurtosis", "proportion"),
+                            confidence_intervals = c("Normal", "Hoeffding", "Chebyshev", "Wald", "Wilson", "Pearson"),
+                            level = 0.90,
+                            assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform")) {
 
-  moment <- match.arg(moment)
-  ci_type <- match.arg(confidence_intervals)
-  assumption_about_data <- match.arg(assumption_about_data)
-  n <- length(data)
+moment <- match.arg(moment)
+ci_type <- match.arg(confidence_intervals)
+assumption_about_data <- match.arg(assumption_about_data)
+n <- length(data)
 
-  # Calculation of the sample momento
-  sample_moment <- switch(moment,
-                          "mean"     = mean(data),
-                          "variance" = var(data),
-                          "skewness" = {
-                            m3 <- sum((data - mean(data))^3) / n
-                            m2 <- sum((data - mean(data))^2) / n
-                            m3 / (m2^(1.5))
-                          },
-                          "kurtosis" = {
-                            m4 <- sum((data - mean(data))^4) / n
-                            m2 <- sum((data - mean(data))^2) / n
-                            m4 / (m2^2)
-                          }
+if (moment == 'mean') {
+    if (!ci_type %in% c("Normal", "Hoeffding", "Chebyshev", "Pearson")) {
+        stop("For the mean, only Normal, Hoeffding, Chebyshev and Pearson CI are available.")
+    }
+    if (ci_type %in% c("Hoeffding", "Chebyshev", "Pearson") && (min(data) == max(data))) {
+        stop("Hoeffding, Chebyshev and Pearson require non constant data (b > a).")
+    }
+} else if (moment == "variance") {
+    if (ci_type != "Normal") {
+        stop("For the variance, only the Normal confidence interval is supported.")
+    }
+} else if (moment == "proportion") {
+    if (!ci_type %in% c("Wald", "Wilson")) {
+        stop("For the proportion, only Wald and Wilson CI are available.")
+    }
+    if (assumption_about_data != "Binomial") {
+        stop("You are calculating a proportion assuming a proportion different from the Binomial")
+    }
+} else if (moment %in% c("skewness", "kurtosis")) {
+    if (assumption_about_data == "Normal") {
+        if (ci_type != "Normal") {
+            stop("For skewness and kurtosis, only normal CI.")
+        }
+    } else {
+        stop("Not available CI for skewness and kurtosis for distribution not Normal")
+    }
+}
+
+ sample_moment <- switch(moment,
+    "mean"       = mean(data),
+    "variance"   = var(data),
+    "skewness"   = {
+      m3 <- sum((data - mean(data))^3) / n
+      m2 <- sum((data - mean(data))^2) / n
+      m3 / (m2^(1.5))
+    },
+    "kurtosis"   = {
+      m4 <- sum((data - mean(data))^4) / n
+      m2 <- sum((data - mean(data))^2) / n
+      m4 / (m2^2)
+    },
+    "proportion" = mean(data)
   )
 
-  # Theorical verification of the biasedness (general asymptotic properties)
   is_biased <- switch(moment,
-                      "mean"     = FALSE,
-                      "variance" = FALSE,
-                      "skewness" = TRUE,
-                      "kurtosis" = TRUE
+    "mean"       = FALSE,
+    "variance"   = FALSE,
+    "skewness"   = TRUE,
+    "kurtosis"   = TRUE,
+    "proportion" = FALSE
   )
 
-  # Calculation of the confidence interval (based on mean)
   ci <- c(NA, NA)
   alpha <- 1 - level
 
@@ -207,29 +234,45 @@ find_method_mm <- function(data,
       se <- sd(data) / sqrt(n)
       margin <- qnorm(1 - alpha/2) * se
       ci <- c(sample_moment - margin, sample_moment + margin)
-    } else if (ci_type == "Hoeffding") {
-      # Hoeffding requires data limited in [a, b]
+    } else if (ci_type %in% c("Pearson", "Hoeffding", "Chebyshev")) {
       a <- min(data)
       b <- max(data)
       R <- b - a
-      margin <- R * sqrt(log(2/alpha) / (2 * n))
-      ci <- c(sample_moment - margin, sample_moment + margin)
-    } else if (ci_type == "Chebyshev") {
-      a <- min(data)
-      b <- max(data)
-      R <- b - a
-      margin <- R * sqrt((1)/(4*n*alpha))
+      if (ci_type == "Hoeffding") {
+        margin <- R * sqrt(log(2/alpha) / (2 * n))
+      } else {
+        margin <- R * sqrt(1 / (4 * n * alpha))
+      }
       ci <- c(sample_moment - margin, sample_moment + margin)
     }
   } else if (moment == "variance" && ci_type == "Normal") {
-    # Asymptotic approximation for the variance based on kurtosi
     kurt <- sum((data - mean(data))^4) / (n * var(data)^2)
     se_var <- var(data) * sqrt((kurt - 1) / n)
     margin <- qnorm(1 - alpha/2) * se_var
     ci <- c(sample_moment - margin, sample_moment + margin)
+  } else if (moment == "proportion") {
+    if (ci_type == "Wald") {
+      se <- sqrt(sample_moment * (1 - sample_moment) / n)
+      margin <- qnorm(1 - alpha/2) * se
+      ci <- c(sample_moment - margin, sample_moment + margin)
+    } else if (ci_type == "Wilson") {
+      z <- qnorm(1 - alpha/2)
+      denominator <- 1 + (z^2 / n)
+      center_adjusted_probability <- sample_moment + (z^2 / (2 * n))
+      adjusted_standard_deviation <- sqrt((sample_moment * (1 - sample_moment) / n) + (z^2 / (4 * n^2)))
+      ci_lower <- (center_adjusted_probability - z * adjusted_standard_deviation) / denominator
+      ci_upper <- (center_adjusted_probability + z * adjusted_standard_deviation) / denominator
+      ci <- c(ci_lower, ci_upper)
+    }
+  } else if (moment %in% c("skewness", "kurtosis") && ci_type == "Normal") {
+    se <- switch(moment,
+      "skewness" = sqrt(6 * n * (n - 1) / ((n - 2) * (n + 1) * (n + 3))),
+      "kurtosis" = sqrt(24 * n * (n - 1)^2 / ((n - 3) * (n - 2) * (n + 3) * (n + 5)))
+    )
+    margin <- qnorm(1 - alpha/2) * se
+    ci <- c(sample_moment - margin, sample_moment + margin)
   }
 
-  # Return result
   return(list(
     data = data,
     moment = moment,
@@ -244,9 +287,9 @@ find_method_mm <- function(data,
 
 #' @name plot_find_method_mm
 #' @title Plot of the output about 'find_method_mm'
-#' @description This function realize an histogram plot about the data of the estimator distribution, with vertical lines for the true parameter and the mean of estimates.
-#' @param res List. The output of 'simulate_estimator_mse'
-#' @return A plot about the distribution of the estimator, with Monte Carlo simulation.
+#' @description This function realize an histogram plot and the density for the distribution chosen to approximate the data.
+#' @param res Plot. The histogram plot.
+#' @return Histogram plot and the density for the distribution chosen to approximate the data.
 #' @examples
 #'
 #' data <- rnorm(100, mean = 5, sd = 2)
@@ -268,7 +311,7 @@ plot_find_method_mm <- function(res) {
     sd_mom <- sd(data)
 
   p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x)) +
-      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 0.5, fill = "cadetblue2", color = "white", alpha = 0.6) +
+      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 1, fill = "#698B69", color = "white", alpha = 0.6) +
       ggplot2::stat_function(fun = dnorm, args = list(mean = mu_mom, sd = sd_mom), color = "darkblue", linewidth = 1.2) +
       ggplot2::labs(
         title = paste("DiagnLamp: MoM adaptment (Normal assumption)"),
@@ -281,8 +324,16 @@ plot_find_method_mm <- function(res) {
   }
 
   else if (assumption_about_data == "Binomial") {
-    cat("Ensure you are passing integers. However, in case of double numbers, casting is performed to the closest integer.")
+    message("Ensure you are passing integers. However, in case of double numbers, casting is performed to the closest integer.")
     df_plot <- data.frame(x = as.integer(data))
+
+    var_d <- var(data)
+    mean_d <- mean(data)
+
+    if (var_d >= mean_d) {
+      stop("The variance is not lower than the mean. Estimation of binomial probability not valid.")
+    }
+
     prob_mom <- 1- (var(as.integer(data)) / mean(as.integer(data)))
     size_mom <- (mean(as.integer(data)) / (prob_mom))
     size_mom <- as.integer(size_mom)
@@ -294,11 +345,11 @@ plot_find_method_mm <- function(res) {
     )
 
     p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x)) +
-      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 0.5, fill = "cadetblue2", color = "white", alpha = 0.6) +
+      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 1, fill = "cadetblue2", color = "white", alpha = 0.6) +
       ggplot2::geom_point(data = df_theo, ggplot2::aes(x = x, y = y), color = 'darkblue', size = 2) +
       ggplot2::geom_line(data = df_theo, ggplot2::aes(x = x, y = y), color = 'darkblue', linewidth = 1) +
       ggplot2::labs(
-        title = paste("DiagnLamp: MoM adaptment (Binomial assumption)"),
+        title = paste("DiagnLamp: MoM adaption (Binomial assumption)"),
         subtitle = sprintf("Analyzed Moment: %s | Estimated value: %.4f", toupper(moment), sample_moment),
         x = "Value",
         y = "Density"
@@ -307,7 +358,7 @@ plot_find_method_mm <- function(res) {
     print(p)
   }
   else if (assumption_about_data == "Poisson") {
-    cat("Ensure you are passing integers. However, in case of double numbers, casting is performed to the closest integer.")
+    message("Ensure you are passing integers. However, in case of double numbers, casting is performed to the closest integer.")
     df_plot <- data.frame(x = as.integer(data))
     lambda_mom <- mean(data)
 
@@ -317,11 +368,11 @@ plot_find_method_mm <- function(res) {
     )
 
     p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x)) +
-      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 0.5, fill = "cadetblue2", color = "white", alpha = 0.6) +
+      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 1, fill = "cadetblue2", color = "white", alpha = 0.6) +
       ggplot2::geom_point(data = df_theo, ggplot2::aes(x = x, y = y), color = 'darkblue', size = 2) +
       ggplot2::geom_line(data = df_theo, ggplot2::aes(x = x, y = y), color = 'darkblue', linewidth = 1) +
       ggplot2::labs(
-        title = paste("DiagnLamp: MoM adaptment (Poisson assumption)"),
+        title = paste("DiagnLamp: MoM adaption (Poisson assumption)"),
         subtitle = sprintf("Analyzed Moment: %s | Estimated value: %.4f", toupper(moment), sample_moment),
         x = "Value",
         y = "Density"
@@ -334,10 +385,10 @@ plot_find_method_mm <- function(res) {
     rate_mom <- 1 / mean(data)
 
     p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x)) +
-      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 0.5, fill = "cadetblue2", color = "white", alpha = 0.6) +
+      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 1, fill = "cadetblue2", color = "white", alpha = 0.6) +
       ggplot2::stat_function(fun = dexp, args = list(rate = rate_mom), color = "darkblue", linewidth = 1.2) +
       ggplot2::labs(
-        title = paste("DiagnLamp: MoM adaptment (Exponential assumption)"),
+        title = paste("DiagnLamp: MoM adaption (Exponential assumption)"),
         subtitle = sprintf("Analyzed Moment: %s | Estimated value: %.4f", toupper(moment), sample_moment),
         x = "Value",
         y = "Density"
@@ -352,10 +403,10 @@ plot_find_method_mm <- function(res) {
     b_unif <- (mean_data * 2) - min(data)
 
     p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x)) +
-      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 0.5, fill = "cadetblue2", color = "white", alpha = 0.6) +
+      ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 1, fill = "cadetblue2", color = "white", alpha = 0.6) +
       ggplot2::stat_function(fun = dunif, args = list(min = a_unif, max = b_unif), color = "darkblue", linewidth = 1.2) +
       ggplot2::labs(
-        title = paste("DiagnLamp: MoM adaptment (Uniform assumption)"),
+        title = paste("DiagnLamp: MoM adaption (Uniform assumption)"),
         subtitle = sprintf("Analyzed Moment: %s | Estimated value: %.4f", toupper(moment), sample_moment),
         x = "Value",
         y = "Density"

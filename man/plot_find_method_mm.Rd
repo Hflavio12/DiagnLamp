@@ -7,13 +7,13 @@
 plot_find_method_mm(res)
 }
 \arguments{
-\item{res}{List. The output of 'simulate_estimator_mse'}
+\item{res}{Plot. The histogram plot.}
 }
 \value{
-A plot about the distribution of the estimator, with Monte Carlo simulation.
+Histogram plot and the density for the distribution chosen to approximate the data.
 }
 \description{
-This function realize an histogram plot about the data of the estimator distribution, with vertical lines for the true parameter and the mean of estimates.
+This function realize an histogram plot and the density for the distribution chosen to approximate the data.
 }
 \examples{
 

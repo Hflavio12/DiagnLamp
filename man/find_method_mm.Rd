@@ -6,8 +6,9 @@
 \usage{
 find_method_mm(
   data,
-  moment = c("mean", "variance", "skewness", "kurtosis"),
-  confidence_intervals = c("Normal", "Hoeffding", "Chebyshev"),
+  moment = c("mean", "variance", "skewness", "kurtosis", "proportion"),
+  confidence_intervals = c("Normal", "Hoeffding", "Chebyshev", "Wald", "Wilson",
+    "Pearson"),
   level = 0.9,
   assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform")
 )
@@ -17,7 +18,7 @@ find_method_mm(
 
 \item{moment}{Character. The moment to estimate. Options are "mean", "variance", "skewness" or "kurtosis".}
 
-\item{confidence_intervals}{Character. The method for computing confidence intervals. Options are "Normal", "Hoeffding" or "Chebyshev".}
+\item{confidence_intervals}{Character. The method for computing confidence intervals. Options are "Normal", "Hoeffding", "Chebyshev", "Wald", "Wilson" and "Pearson".}
 
 \item{level}{Numeric. The confidence level for the intervals (default is 0.90).}
 
@@ -30,7 +31,7 @@ A list containing the estimated moment, bias status, confidence intervals, and o
 This function estimates a specified moment (mean, variance, skewness, or kurtosis) from the provided data using the Method of Moments (MoM). It also checks for bias and computes confidence intervals based on the selected method (Normal or Hoeffding). Additionally, it can generate a plot comparing the empirical distribution of the data with the theoretical distribution implied by the estimated moment.
 }
 \note{
-The Hoeffding and Chebyshev confidence intervals requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
+The Hoeffding, Pearson and Chebyshev confidence intervals requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
 }
 \examples{
 
@@ -38,6 +39,6 @@ The Hoeffding and Chebyshev confidence intervals requires that the data be bound
 
 data <- rnorm(100, mean = 5, sd = 2)
 
-result <- find_method_mm(data, moment = "mean", confidence_intervals = "Chebyshev", level = 0.95)
+result <- find_method_mm(data, moment = "skewness", confidence_intervals = "Normal", level = 0.95)
 
 }

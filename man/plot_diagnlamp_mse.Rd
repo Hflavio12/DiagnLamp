@@ -34,7 +34,7 @@ estimator_func <- function(data) {
 (0.5 * (data[1]^2 * data[2]^2 * data[3]^3) - (data[1]*data[2]*data[3])) }
 
 # Run the simulation
-results <- simulate_estimator_mse(n = 10,
+results <- simulate_estimator_mse(n = 1000,
 true_param = true_variance,
 data_gen_func = generate_data,
 estimator_func = estimator_func, nsim = 1000)
@@ -42,6 +42,5 @@ estimator_func = estimator_func, nsim = 1000)
 # Realize the plot
 distorted_estimator <- plot_diagnlamp_mse(results)
 
-print(distorted_estimator)
 
 }
