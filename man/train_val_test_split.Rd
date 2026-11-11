@@ -4,16 +4,24 @@
 \alias{train_val_test_split}
 \title{Dataset splitting.}
 \usage{
-train_val_test_split(df, train_size = 0.7, val_size = 0.15, test_size = 0.15)
+train_val_test_split(
+  df,
+  train_size = 0.7,
+  val_size = 0.15,
+  test_size = 0.15,
+  seed = NULL
+)
 }
 \arguments{
-\item{train_size}{Dataframe. The size of the training set.}
+\item{df}{Dataframe. The starting dataframe.}
 
-\item{val_size}{Dataframe. The size of the validation set.}
+\item{train_size}{Double. The size of the training set.}
 
-\item{test_size}{Dataframe. The size of the test set.}
+\item{val_size}{Double. The size of the validation set.}
 
-\item{data}{Dataframe. The starting dataframe.}
+\item{test_size}{Double. The size of the test set.}
+
+\item{seed}{Integer. The seed for random sampling (default is NULL).}
 }
 \value{
 A list with the three sets.
@@ -27,6 +35,6 @@ Split a dataset into three popular sub-elements: training, validation and test d
 df <- na.omit(airquality)
 
 # Split the dataset
-res <-  train_val_test_split(df, train_size = 0.7, val_size = 0.15, test_size = 0.15)
+res <-  train_val_test_split(df, train_size = 0.7, val_size = 0.15, test_size = 0.15, seed = 122)
 
 }

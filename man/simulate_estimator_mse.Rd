@@ -19,6 +19,7 @@ A list containing the MSE, bias, variance, consistency check, and the estimates 
 }
 \description{
 This function performs a Monte Carlo simulation to evaluate the Mean Squared Error (MSE) of a given estimator.
+It generates data using a specified data generation function, applies the estimator function to the generated data, and computes the MSE, bias, and variance of the estimator. Additionally, it checks for empirical consistency of the estimator by evaluating how the MSE changes with increasing sample sizes.
 }
 \details{
 DiagnLamp.R

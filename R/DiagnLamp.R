@@ -6,7 +6,7 @@
 #' @name simulate_estimator_mse
 #' @title Simulation of Estimator MSE
 #' @description This function performs a Monte Carlo simulation to evaluate the Mean Squared Error (MSE) of a given estimator.
-# It generates data using a specified data generation function, applies the estimator function to the generated data, and computes the MSE, bias, and variance of the estimator. Additionally, it checks for empirical consistency of the estimator by evaluating how the MSE changes with increasing sample sizes.
+#' It generates data using a specified data generation function, applies the estimator function to the generated data, and computes the MSE, bias, and variance of the estimator. Additionally, it checks for empirical consistency of the estimator by evaluating how the MSE changes with increasing sample sizes.
 #' @param n Integer. The sample size for each simulation.
 #' @param true_param Numeric. The true parameter value that the estimator is trying to estimate.
 #' @param data_gen_func Function. A function that generates data given a sample size n.
@@ -30,7 +30,7 @@
 #' The consistency check is based on the Spearman correlation between sample sizes and their corresponding MSEs. A strongly negative correlation (<= -0.9) indicates empirical consistency of the estimator.
 #' @export
 
-globalVariables(c("Dataset", "MSE", "Estimate", "x", "y", "Observation", "Leverage", "Influential_Leverage", "Cooks_Distance", "Influential_Cooks", "generate_data", "true_param_vector", "mean_estimate_vector"))
+globalVariables(c("Dataset", "MSE", "Estimate", "x", "y", "Observation", "Leverage", "Influential_Leverage", "Cooks_Distance", "Influential_Cooks", "true_param_vector", "mean_estimate_vector"))
 
 simulate_estimator_mse <- function(n, true_param, data_gen_func, estimator_func, nsim = 1000) {
 
@@ -39,7 +39,7 @@ simulate_estimator_mse <- function(n, true_param, data_gen_func, estimator_func,
 
   # Perform Monte Carlo simulations
   estimates <- sapply(1:nsim, function(i) {
-    data <- generate_data(n)
+    data <- data_gen_func(n)
     estimator_func(data)
   })
 
@@ -156,9 +156,11 @@ plot_diagnlamp_mse <- function(res) {
 #'
 #' # Example usage of find_method_mm
 #'
-#' data <- rnorm(100, mean = 5, sd = 2)
+#' # Example usage of find_method_mm
 #'
-#' result <- find_method_mm(data, moment = "skewness", confidence_intervals = "Normal", level = 0.95)
+#' data <- rbinom(100, size = 1, prob = 0.5)
+#'
+#' result <- find_method_mm(data, moment = "proportion", confidence_intervals = "Wald", level = 0.95, assumption_about_data = "Binomial")
 #'
 #' @note
 #' The Hoeffding, Pearson and Chebyshev confidence intervals requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
@@ -399,8 +401,9 @@ plot_find_method_mm <- function(res) {
   else if (assumption_about_data == "Uniform") {
     df_plot <- data.frame(x = data)
     mean_data <- mean(data)
-    a_unif <- (mean_data * 2) - max(data)
-    b_unif <- (mean_data * 2) - min(data)
+    sd_data <- sd(data)
+    a_unif <- mean_data - sqrt(3) * sd_data
+    b_unif <- mean_data + sqrt(3) * sd_data
 
     p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x)) +
       ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 1, fill = "cadetblue2", color = "white", alpha = 0.6) +
@@ -625,10 +628,11 @@ plot_influence_analysis <- function(res) {
 #' @name train_val_test_split
 #' @title Dataset splitting.
 #' @description Split a dataset into three popular sub-elements: training, validation and test datasets.
-#' @param data Dataframe. The starting dataframe.
-#' @param train_size Dataframe. The size of the training set.
-#' @param val_size Dataframe. The size of the validation set.
-#' @param test_size Dataframe. The size of the test set.
+#' @param df Dataframe. The starting dataframe.
+#' @param train_size Double. The size of the training set.
+#' @param val_size Double. The size of the validation set.
+#' @param test_size Double. The size of the test set.
+#' @param seed Integer. The seed for random sampling (default is NULL).
 #' @return A list with the three sets.
 #' @examples
 #'
@@ -636,19 +640,22 @@ plot_influence_analysis <- function(res) {
 #' df <- na.omit(airquality)
 #'
 #' # Split the dataset
-#' res <-  train_val_test_split(df, train_size = 0.7, val_size = 0.15, test_size = 0.15)
+#' res <-  train_val_test_split(df, train_size = 0.7, val_size = 0.15, test_size = 0.15, seed = 122)
 #'
 #' @export
-train_val_test_split <- function(df, train_size = 0.7, val_size = 0.15, test_size = 0.15) {
-  if (train_size + val_size + test_size != 1) {
+train_val_test_split <- function(df, train_size = 0.7, val_size = 0.15, test_size = 0.15, seed = NULL) {
+  if (!isTRUE(all.equal(train_size + val_size + test_size, 1))) {
     stop("The sum of sizes must be 1")
   }
   else {
-  set.seed(123)
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
   idx <- sample(1:nrow(df), size = train_size * nrow(df))
   train <- df[idx, ]
   idx2 <- sample(1:nrow(train), size = val_size * nrow(train))
   val <- train[idx2, ]
+  train <- train[-idx2, ]
   test <- df[-idx,]
   return(list(
     train = train,
@@ -658,13 +665,5 @@ train_val_test_split <- function(df, train_size = 0.7, val_size = 0.15, test_siz
   }
 }
 
-library(ggplot2)
-diamonds <- ggplot2::diamonds
-
-
-data <- diamonds$carat
-mean(data)
-
-result <- find_method_mm(data, moment = "mean", confidence_intervals = "Chebyshev", level = 0.95)
 
 

@@ -37,8 +37,10 @@ The Hoeffding, Pearson and Chebyshev confidence intervals requires that the data
 
 # Example usage of find_method_mm
 
-data <- rnorm(100, mean = 5, sd = 2)
+# Example usage of find_method_mm
 
-result <- find_method_mm(data, moment = "skewness", confidence_intervals = "Normal", level = 0.95)
+data <- rbinom(100, size = 1, prob = 0.5)
+
+result <- find_method_mm(data, moment = "proportion", confidence_intervals = "Wald", level = 0.95, assumption_about_data = "Binomial")
 
 }
