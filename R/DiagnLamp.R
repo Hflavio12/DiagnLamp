@@ -30,6 +30,7 @@
 #' The consistency check is based on the Spearman correlation between sample sizes and their corresponding MSEs. A strongly negative correlation (<= -0.9) indicates empirical consistency of the estimator.
 #' @export
 
+# Eliminiamo le global variables, partiamo con Dataset
 globalVariables(c("Dataset", "MSE", "Estimate", "x", "y", "Observation", "Leverage", "Influential_Leverage", "Cooks_Distance", "Influential_Cooks", "true_param_vector", "mean_estimate_vector"))
 
 simulate_estimator_mse <- function(n, true_param, data_gen_func, estimator_func, nsim = 1000) {
@@ -151,6 +152,7 @@ plot_diagnlamp_mse <- function(res) {
 #' @param confidence_intervals Character. The method for computing confidence intervals. Options are "Normal", "Hoeffding", "Chebyshev", "Wald", "Wilson" and "Pearson".
 #' @param level Numeric. The confidence level for the intervals (default is 0.90).
 #' @param assumption_about_data Character. Normal as default.
+#' @param size Integer. The number of trials for each observation.
 #' @return A list containing the estimated moment, bias status, confidence intervals, and other relevant information.
 #' @examples
 #'
@@ -158,18 +160,23 @@ plot_diagnlamp_mse <- function(res) {
 #'
 #' # Example usage of find_method_mm
 #'
-#' data <- rbinom(100, size = 1, prob = 0.5)
+#' data <- rbinom(100, size = 10, prob = 0.5)
 #'
-#' result <- find_method_mm(data, moment = "proportion", confidence_intervals = "Wald", level = 0.95, assumption_about_data = "Binomial")
+#' result <- find_method_mm(data, moment = "proportion",
+#' confidence_intervals = "Wald",
+#' level = 0.95, assumption_about_data = "Binomial",
+#' size = 10)
 #'
 #' @note
 #' The Hoeffding, Pearson and Chebyshev confidence intervals requires that the data be bounded; the function uses the empirical minimum and maximum of the data as bounds.
 #' @export
+# In moment == proportion, we have to correct the standard error calculation because is valid only for binary data. For size = 10, the mean exceed 1 and we have an error.
 find_method_mm <- function(data,
                             moment = c("mean", "variance", "skewness", "kurtosis", "proportion"),
                             confidence_intervals = c("Normal", "Hoeffding", "Chebyshev", "Wald", "Wilson", "Pearson"),
                             level = 0.90,
-                            assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform")) {
+                            assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform"),
+                            size = 1) {
 
 moment <- match.arg(moment)
 ci_type <- match.arg(confidence_intervals)
@@ -253,15 +260,16 @@ if (moment == 'mean') {
     margin <- qnorm(1 - alpha/2) * se_var
     ci <- c(sample_moment - margin, sample_moment + margin)
   } else if (moment == "proportion") {
+    n_trials <- n * size
     if (ci_type == "Wald") {
-      se <- sqrt(sample_moment * (1 - sample_moment) / n)
+      se <- sqrt(sample_moment * (1 - sample_moment) / n_trials)
       margin <- qnorm(1 - alpha/2) * se
       ci <- c(sample_moment - margin, sample_moment + margin)
     } else if (ci_type == "Wilson") {
       z <- qnorm(1 - alpha/2)
-      denominator <- 1 + (z^2 / n)
-      center_adjusted_probability <- sample_moment + (z^2 / (2 * n))
-      adjusted_standard_deviation <- sqrt((sample_moment * (1 - sample_moment) / n) + (z^2 / (4 * n^2)))
+      denominator <- 1 + (z^2 / n_trials)
+      center_adjusted_probability <- sample_moment + (z^2 / (2 * n_trials))
+      adjusted_standard_deviation <- sqrt((sample_moment * (1 - sample_moment) / n_trials) + (z^2 / (4 * n_trials^2)))
       ci_lower <- (center_adjusted_probability - z * adjusted_standard_deviation) / denominator
       ci_upper <- (center_adjusted_probability + z * adjusted_standard_deviation) / denominator
       ci <- c(ci_lower, ci_upper)
@@ -401,9 +409,8 @@ plot_find_method_mm <- function(res) {
   else if (assumption_about_data == "Uniform") {
     df_plot <- data.frame(x = data)
     mean_data <- mean(data)
-    sd_data <- sd(data)
-    a_unif <- mean_data - sqrt(3) * sd_data
-    b_unif <- mean_data + sqrt(3) * sd_data
+    a_unif <- (mean_data * 2) - max(data)
+    b_unif <- (mean_data * 2) - min(data)
 
     p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x)) +
       ggplot2::geom_histogram(ggplot2::aes(y = ggplot2::after_stat(density)), binwidth = 1, fill = "cadetblue2", color = "white", alpha = 0.6) +
@@ -508,12 +515,6 @@ plot_Errf <- function(res) {
   MSE_test <- res[['MSE_test']]
   opt_empirical <- res[['optimism_empirical']]
   opt_analytical <- res[['optimism_analytical']]
-
-  # Dumbbell Plot
-  df_dumbbell <- data.frame(
-    Dataset = c("Train", "Test"),
-    MSE = c(MSE_train, MSE_test)
-  )
 
   p_opt <- ggplot2::ggplot(df_dumbbell, ggplot2::aes(x = Dataset, y = MSE)) +
     ggplot2::geom_line(ggplot2::aes(group = 1), color = "coral1", linetype = "solid", linewidth = 1.2) +

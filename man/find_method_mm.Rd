@@ -10,7 +10,8 @@ find_method_mm(
   confidence_intervals = c("Normal", "Hoeffding", "Chebyshev", "Wald", "Wilson",
     "Pearson"),
   level = 0.9,
-  assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform")
+  assumption_about_data = c("Normal", "Binomial", "Poisson", "Exponential", "Uniform"),
+  size = 1
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ find_method_mm(
 \item{level}{Numeric. The confidence level for the intervals (default is 0.90).}
 
 \item{assumption_about_data}{Character. Normal as default.}
+
+\item{size}{Integer. The number of trials for each observation.}
 }
 \value{
 A list containing the estimated moment, bias status, confidence intervals, and other relevant information.
@@ -39,8 +42,11 @@ The Hoeffding, Pearson and Chebyshev confidence intervals requires that the data
 
 # Example usage of find_method_mm
 
-data <- rbinom(100, size = 1, prob = 0.5)
+data <- rbinom(100, size = 10, prob = 0.5)
 
-result <- find_method_mm(data, moment = "proportion", confidence_intervals = "Wald", level = 0.95, assumption_about_data = "Binomial")
+result <- find_method_mm(data, moment = "proportion",
+confidence_intervals = "Wald",
+level = 0.95, assumption_about_data = "Binomial",
+size = 10)
 
 }
